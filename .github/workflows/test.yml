@@ -51,7 +51,6 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: static-css-container  # Ensure this matches the task definition
-          image: $ECR_REGISTRY:${{ github.sha }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
