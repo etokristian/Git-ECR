@@ -42,8 +42,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRYmytestecr:$IMAGE_TAG .
-          docker push $ECR_REGISTRYmytestecr:$IMAGE_TAG
+          docker build -t $ECR_REGISTRY/mytestecr:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/mytestecr:$IMAGE_TAG
 
       - name: Fill in the new image ID in the ECS task definition
         id: deploy-task-def
