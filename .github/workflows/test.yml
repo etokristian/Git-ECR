@@ -18,7 +18,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v3
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -31,7 +31,7 @@ jobs:
           docker push $ECR_REGISTRY/myappecr:$IMAGE_TAG
       - name: Fill in the new image ID in the ECS task definition
         id: deploy-task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        uses: aws-actions/amazon-ecs-render-task-definition@v3
         with:
           task-definition: task-definition.json
           container-name: static-css-container
