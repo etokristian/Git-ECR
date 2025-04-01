@@ -60,4 +60,3 @@ jobs:
           service: static-css-service
           cluster: static-css-cluster
           wait-for-service-stability: true
-
