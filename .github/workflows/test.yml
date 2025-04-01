@@ -1,42 +1,58 @@
-name: Deploy Simple Image to ECR
+name: Deploy to ECS (with ECR Creation)
+
 on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create ECR Repository (if it doesn't exist)
+        id: create-ecr
+        run: |
+          if ! aws ecr describe-repositories --repository-names mytestecr --region ${{ secrets.AWS_REGION }} > /dev/null 2>&1; then
+            aws ecr create-repository --repository-name mytestecr --region ${{ secrets.AWS_REGION }}
+            echo "ECR repository 'mytestecr' created."
+          else
+            echo "ECR repository 'mytestecr' already exists."
+          fi
+          ECR_REGISTRY=$(aws ecr describe-repositories --repository-names mytestecr --region ${{ secrets.AWS_REGION }} --query repositories[0].repositoryUri --output text | sed 's|mytestecr$||')
+          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
+
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v3
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-        run: >
-          docker build -t $ECR_REGISTRY/myappecr:$IMAGE_TAG
-          .
+        run: |
+          docker build -t $ECR_REGISTRYmytestecr:$IMAGE_TAG .
+          docker push $ECR_REGISTRYmytestecr:$IMAGE_TAG
 
-          docker push $ECR_REGISTRY/myappecr:$IMAGE_TAG
       - name: Fill in the new image ID in the ECS task definition
         id: deploy-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: static-css-container
-          image: ${{ steps.login-ecr.outputs.registry }}/myappecr:${{
-            github.sha }}
+          image: $ECR_REGISTRYmytestecr:${{ github.sha }}
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
